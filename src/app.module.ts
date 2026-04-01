@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import {ConfigModule} from "@nestjs/config";
 import {IS_DEV_ENV} from "@/libs/common/utils/is-dev.util";
 import { PrismaModule } from './prisma/prisma.module';
+import { UserModule } from './user/user.module';
+import {AuthModule} from "@/auth/auth.module";
 
 @Module({
   imports: [
@@ -10,6 +12,8 @@ import { PrismaModule } from './prisma/prisma.module';
         isGlobal: true, // модуль доступен во всем приложении
       }),
       PrismaModule,
+      AuthModule,
+      UserModule,
   ],
 })
 export class AppModule {}

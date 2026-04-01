@@ -27,7 +27,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "@nestlab/google-recaptcha": "^3.11.1",
-    "@prisma/client": "^7.6.0",
+    "@prisma/client": "^6.19.3",
     "@react-email/components": "^1.0.10",
     "@react-email/html": "^0.0.12",
     "argon2": "^0.44.0",
@@ -37,7 +37,7 @@
     "cookie-parser": "^1.4.7",
     "express-session": "^1.19.0",
     "ioredis": "^5.10.1",
-    "prisma": "^7.6.0",
+    "prisma": "^6.19.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
