@@ -15,36 +15,40 @@ import {verify} from "argon2";
 import {ConfigService} from "@nestjs/config";
 import {ProviderService} from "@/auth/provider/provider.service";
 import {PrismaService} from "@/prisma/prisma.service";
+import {EmailConfirmationService} from "@/auth/email-confirmation/email-confirmation.service";
+import { TwoFactorAuthService } from './two-factor-auth/two-factor-auth.service';
 
 @Injectable()
 export class AuthService {
     public constructor(
         private readonly prismaService: PrismaService,
         private readonly userService: UserService,
-        private readonly configService: ConfigService, private readonly providerService: ProviderService,
+        private readonly configService: ConfigService,
+        private readonly providerService: ProviderService,
+        private readonly emailConfirmationService: EmailConfirmationService,
+        private  readonly twoFactorAuthService: TwoFactorAuthService,
     ) {}
 
     public async register(req: Request, dto: RegisterDto) {
-        try {
-            const isExist = await this.userService.findByEmail(dto.email);
+        const isExist = await this.userService.findByEmail(dto.email);
 
-            if (isExist) {
-                throw new ConflictException('Пользователь с таким email уже существует');
-            }
+        if (isExist) {
+            throw new ConflictException('Пользователь с таким email уже существует');
+        }
 
-            const newUser = await this.userService.create(
-                dto.email,
-                dto.password,
-                dto.name,
-                '',
-                AuthMethod.CREDENTIALS,
-                false,
-            );
+        const newUser = await this.userService.create(
+            dto.email,
+            dto.password,
+            dto.name,
+            '',
+            AuthMethod.CREDENTIALS,
+            false,
+        );
 
-            return await this.saveSession(req, newUser);
-        } catch (error) {
-            console.error('Register error:', error);
-            throw error;
+        await this.emailConfirmationService.sendVerificationToken(newUser.email);
+
+        return {
+            message: 'Вы успешно зарегистрировались подтвердите свой email. Сообщение было отправлено на ваш почтовый адрес'
         }
     }
 
@@ -59,6 +63,23 @@ export class AuthService {
 
         if (!isValidPassword) {
             throw new UnauthorizedException('Неверный пароль попробуйте еще или восстановите его');
+        }
+
+        if (!user.isVerified) {
+            await this.emailConfirmationService.sendVerificationToken(user.email);
+            throw new UnauthorizedException('Ваш email не подтвержден');
+        }
+
+        if (user.isTwoFactorEnabled) {
+            if(!dto.code) {
+                await this.twoFactorAuthService.sendTwoFactorToken(user.email);
+
+                return {
+                    message: 'Проверьте почту требуется код двухфакторной аутентификации',
+                }
+            }
+
+            await this.twoFactorAuthService.validateTwoFactorToken(user.email,  dto.code);
         }
 
         return await this.saveSession(req, user);
